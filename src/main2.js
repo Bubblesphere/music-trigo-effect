@@ -1,11 +1,49 @@
+Math.toRadian = function(angle) {
+    return angle * Math.PI / 180;
+};
+
 class Circle {
+	constructor({
+		radius: radius,
+		origin: origin
+	}) {
+		this.radius = radius
+		this.origin = origin;
+	}
+
+	get Radius() {
+		return this.radius;
+	}
+
+	set Radius(val) {
+		this.radius = val;
+	}
+
+	set Origin(val) {
+		this.origin = val;
+	}
+
+	CoordonateAtAngle(angle) {
+		const radianAngle = Math.toRadian(angle);
+		const cosAngle = Math.cos(radianAngle);
+		const sinAngle = Math.sin(radianAngle);
+
+		return {
+			x: this.origin + this.radius * cosAngle,
+			y: this.origin + this.radius * sinAngle
+		}
+	}
+}
+
+
+class Effect {
 	constructor(p, {
 		rgbMode: rgbMode = 0,
 		secondaryColor: secondaryColor = 200,
 		strokeWidth: strokeWidth = 4,
-		circleRadius: circleRadius = 20,
+		innerCircleRadius: innerCircleRadius = 20,
 		cycleRate: cycleRate = 8,
-		halfSize: halfSize = 100
+		maxRadius: maxRadius = 100
 	}={}) {
 		this.p = p;
 		this.prev = {};
@@ -13,10 +51,19 @@ class Circle {
 		this.rgbMode = rgbMode;
 		this.secondaryColor = secondaryColor;
 		this.strokeWidth = strokeWidth;
-		this.circleRadius = circleRadius;
 		this.cycleRate = cycleRate;
-		this.halfSize = halfSize;
 		this.init = {};
+		this.maxRadius = maxRadius;
+
+		this.innerCircle = new Circle({
+			radius: innerCircleRadius,
+			origin: maxRadius
+		});
+
+		this.outerCircle = new Circle({
+			radius: innerCircleRadius,
+			origin: maxRadius
+		})
 	}
 
 	get RgbMode() { return this.rgbMode; }
@@ -28,30 +75,23 @@ class Circle {
 	get StrokeWidth() { return this.strokeWidth; }
 	set StrokeWidth(val) { this.strokeWidth = val; }
 
-	get CircleRadius() { return this.circleRadius; }
-	set CircleRadius(val) { this.circleRadius = val; }
-
 	get CycleRate() { return this.cycleRate; }
 	set CycleRate(val) { this.cycleRate = val; }
 
-	get HalfSize() { return this.halfSize; }
-	set HalfSize(val) { this.halfSize = val; }
+	set InnerCircleRadius(val) { 
+		this.innerCircle.Radius = val; 
+	}
+
+	set MaxRadius(val) { 
+		this.innerCircle.Origin = val/2;
+		this.outerCircle.Origin = val/2;
+	}
 
 	drawLine(lineAngle) {
-			// dépasse pas les limites de l'écran
-			const lineLength = this.randomInteger(this.circleRadius, this.p.height / 2 - this.strokeWidth);
-			
-			// point correspondant à l'angle entre le milieu, et le premier cercle imaginaire
-			const start = {
-					x: (this.halfSize + this.circleRadius / 2 * Math.cos(lineAngle * Math.PI / 180)),
-					y: (this.halfSize + this.circleRadius / 2 * Math.sin(lineAngle * Math.PI / 180))
-			};
-			
-			// point correspondant à l'angle entre le milieu, et le deuxième cercle imaginaire
-			const end = {
-					x: (this.halfSize + lineLength * Math.cos(lineAngle * Math.PI / 180)),
-					y: (this.halfSize + lineLength * Math.sin(lineAngle * Math.PI / 180))
-			}
+			this.outerCircle.Radius = this.randomInteger(this.innerCircle.radius, this.maxRadius - this.strokeWidth)
+
+			const start = this.innerCircle.CoordonateAtAngle(lineAngle);
+			const end = this.outerCircle.CoordonateAtAngle(lineAngle);
 			
 			if (lineAngle == 0) {
 					this.init.x = end.x;
@@ -90,7 +130,7 @@ class Circle {
 }	
 
 var sketch = function(p) {
-	const circle = new Circle(p, {
+	const effect = new Effect(p, {
 		rgbMode:  0,
 		secondaryColor: 200,
 		strokeWidth: 4,
@@ -102,7 +142,7 @@ var sketch = function(p) {
 	p.setup = () => {
 		const el = document.getElementById("node");
 		const size = el.offsetWidth < el.offsetHeight ? el.offsetWidth: el.offsetHeight;
-		circle.HalfSize = size / 2;
+		effect.MaxRadius = size / 2;
 		p.createCanvas(size, size);
 		p.frameRate(8);
 	}
@@ -110,7 +150,7 @@ var sketch = function(p) {
 	p.windowResized = () => {
 		const el = document.getElementById("node");
 		const size = el.offsetWidth < el.offsetHeight ? el.offsetWidth : el.offsetHeight;
-		circle.HalfSize = size / 2;
+		effect.MaxRadius = size / 2;
 		p.resizeCanvas(size, size);
 	}
 
@@ -118,11 +158,9 @@ var sketch = function(p) {
 		p.clear();
 					
 		// 360 / strokeWidth donne le nombre de ligne à générer
-		for(var i = 0; i < 360; i = i + circle.StrokeWidth) {
-				circle.drawLine(i);
+		for(var i = 0; i < 360; i = i + effect.StrokeWidth) {
+				effect.drawLine(i);
 		}
-
-		//
 	}
 }
 
