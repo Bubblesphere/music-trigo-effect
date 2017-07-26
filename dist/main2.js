@@ -8,6 +8,10 @@ Math.toRadian = function (angle) {
 	return angle * Math.PI / 180;
 };
 
+Math.randomBetween = function (from, to) {
+	return Math.floor(Math.random() * (to - from + 1) + from);
+};
+
 var Circle = function () {
 	function Circle(_ref) {
 		var radius = _ref.radius,
@@ -51,6 +55,8 @@ var Circle = function () {
 
 var Effect = function () {
 	function Effect(p) {
+		var _this = this;
+
 		var _ref2 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
 		    _ref2$rgbMode = _ref2.rgbMode,
 		    rgbMode = _ref2$rgbMode === undefined ? 0 : _ref2$rgbMode,
@@ -62,8 +68,8 @@ var Effect = function () {
 		    innerCircleRadius = _ref2$innerCircleRadi === undefined ? 20 : _ref2$innerCircleRadi,
 		    _ref2$cycleRate = _ref2.cycleRate,
 		    cycleRate = _ref2$cycleRate === undefined ? 8 : _ref2$cycleRate,
-		    _ref2$maxRadius = _ref2.maxRadius,
-		    maxRadius = _ref2$maxRadius === undefined ? 100 : _ref2$maxRadius;
+		    _ref2$element = _ref2.element,
+		    element = _ref2$element === undefined ? "effect" : _ref2$element;
 
 		_classCallCheck(this, Effect);
 
@@ -75,23 +81,39 @@ var Effect = function () {
 		this.strokeWidth = strokeWidth;
 		this.cycleRate = cycleRate;
 		this.init = {};
-		this.maxRadius = maxRadius;
+		this.el = document.getElementById(element);
+		this.maxDiameter = this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth : this.el.offsetHeight;
+		this.maxRadius = this.maxDiameter / 2;
 
 		this.innerCircle = new Circle({
 			radius: innerCircleRadius,
-			origin: maxRadius
+			origin: this.maxRadius
 		});
 
 		this.outerCircle = new Circle({
 			radius: innerCircleRadius,
-			origin: maxRadius
+			origin: this.maxRadius
 		});
+
+		this.p.frameRate(cycleRate);
+
+		this.p.setup = function () {
+			_this.setup();
+		};
+
+		this.p.windowResized = function () {
+			_this.resize();
+		};
+
+		this.p.draw = function () {
+			_this.draw();
+		};
 	}
 
 	_createClass(Effect, [{
 		key: "drawLine",
 		value: function drawLine(lineAngle) {
-			this.outerCircle.Radius = this.randomInteger(this.innerCircle.radius, this.maxRadius - this.strokeWidth);
+			this.outerCircle.Radius = Math.randomBetween(this.innerCircle.radius, this.maxRadius - this.strokeWidth);
 
 			var start = this.innerCircle.CoordonateAtAngle(lineAngle);
 			var end = this.outerCircle.CoordonateAtAngle(lineAngle);
@@ -120,17 +142,40 @@ var Effect = function () {
 		key: "getRandomColor",
 		value: function getRandomColor() {
 			if (this.rgbMode == 0) {
-				return this.p.color(this.randomInteger(0, 256), this.secondaryColor, this.secondaryColor);
+				return this.p.color(Math.randomBetween(0, 256), this.secondaryColor, this.secondaryColor);
 			} else if (this.rgbMode == 1) {
-				return this.p.color(secondaryColor, this.randomInteger(0, 256), this.secondaryColor);
+				return this.p.color(this.secondaryColor, Math.randomBetween(0, 256), this.secondaryColor);
 			} else {
-				return this.p.color(this.secondaryColor, this.secondaryColor, this.randomInteger(0, 256));
+				return this.p.color(this.secondaryColor, this.secondaryColor, Math.randomBetween(0, 256));
 			}
 		}
 	}, {
-		key: "randomInteger",
-		value: function randomInteger(min, max) {
-			return Math.random() * (max - min) + min;
+		key: "getSize",
+		value: function getSize() {
+			return this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth : this.el.offsetHeight;
+		}
+	}, {
+		key: "setup",
+		value: function setup() {
+			var size = this.getSize();
+			this.p.createCanvas(size, size);
+		}
+	}, {
+		key: "resize",
+		value: function resize() {
+			var size = this.getSize();
+			this.MaxRadius = size / 2;
+			this.p.resizeCanvas(size, size);
+		}
+	}, {
+		key: "draw",
+		value: function draw() {
+			this.p.clear();
+
+			// 360 / strokeWidth donne le nombre de ligne à générer
+			for (var i = 0; i < 360; i = i + this.StrokeWidth) {
+				this.drawLine(i);
+			}
 		}
 	}, {
 		key: "RgbMode",
@@ -172,46 +217,22 @@ var Effect = function () {
 	}, {
 		key: "MaxRadius",
 		set: function set(val) {
-			this.innerCircle.Origin = val / 2;
-			this.outerCircle.Origin = val / 2;
+			this.maxRadius = val;
+			this.innerCircle.Origin = val;
+			this.outerCircle.Origin = val;
 		}
 	}]);
 
 	return Effect;
 }();
 
-var sketch = function sketch(p) {
-	var effect = new Effect(p, {
+new p5(function (p) {
+	new Effect(p, {
 		rgbMode: 0,
 		secondaryColor: 200,
-		strokeWidth: 4,
-		circleRadius: 20,
-		cycleRate: 8
+		strokeWidth: 10,
+		circleRadius: 50,
+		cycleRate: 1,
+		element: "node"
 	});
-
-	p.setup = function () {
-		var el = document.getElementById("node");
-		var size = el.offsetWidth < el.offsetHeight ? el.offsetWidth : el.offsetHeight;
-		effect.MaxRadius = size / 2;
-		p.createCanvas(size, size);
-		p.frameRate(8);
-	};
-
-	p.windowResized = function () {
-		var el = document.getElementById("node");
-		var size = el.offsetWidth < el.offsetHeight ? el.offsetWidth : el.offsetHeight;
-		effect.MaxRadius = size / 2;
-		p.resizeCanvas(size, size);
-	};
-
-	p.draw = function () {
-		p.clear();
-
-		// 360 / strokeWidth donne le nombre de ligne à générer
-		for (var i = 0; i < 360; i = i + effect.StrokeWidth) {
-			effect.drawLine(i);
-		}
-	};
-};
-
-new p5(sketch, "node");
+}, "node");

@@ -1,116 +1,158 @@
-var soundEffect = (function(p5) {
-		var s = function(p) {
+Math.randomBetween = (from, to) => {
+		return Math.floor(Math.random() * (to - from + 1) + from);
+}
+
+class Circle {
+	constructor({
+		radius: radius,
+		origin: origin
+	}) {
+		this.radius = radius
+		this.origin = origin;
+	}
+
+	get Radius() { return this.radius; }
+
+	set Radius(val) { this.radius = val; }
+
+	set Origin(val) { this.origin = val; }
+
+	CoordonateAtRadian(radian) {
+		const cosAngle = Math.cos(radian);
+		const sinAngle = Math.sin(radian);
+
+		return {
+			x: this.origin + this.radius * cosAngle,
+			y: this.origin + this.radius * sinAngle
+		}
+	}
+}
+
+class Effect {
+	constructor(p, {
+		rgbMode: rgbMode = 0,
+		secondaryColor: secondaryColor = 200,
+		strokeWidth: strokeWidth = 4,
+		innerCircleRadius: innerCircleRadius = 20,
+		cycleRate: cycleRate = 8,
+		element: element = "effect"
+	}={}) {
+		this.p = p;
+		this.rgbMode = rgbMode;
+		this.secondaryColor = secondaryColor;
+		this.strokeWidth = strokeWidth;
+		this.cycleRate = cycleRate;
+		this.el = document.getElementById(element);
+
+		this.prev = {};
+		this.init = {};
+		
+
+		const maxDiameter = this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth: this.el.offsetHeight;
+		this.maxRadius = maxDiameter / 2;
+
+		this.innerCircle = new Circle({
+			radius: innerCircleRadius,
+			origin: this.maxRadius
+		});
+
+		this.outerCircle = new Circle({
+			radius: innerCircleRadius,
+			origin: this.maxRadius
+		})
+
+		this.p.frameRate(cycleRate);
+
+		this.p.setup = () => {
+			this.trackElementSize();
+			const diameter = this.maxRadius * 2;
+			this.p.createCanvas(diameter , diameter);
+		}
+
+		this.p.windowResized = () => {
+			this.trackElementSize();
+			const diameter = this.maxRadius * 2;
+			this.p.resizeCanvas(diameter, diameter);
+		}
+
+		this.p.draw = () => {
+			this.p.clear();
+
+			// loop 360/strokeWidth times for a full circle of lines
+			for(var i = 0; i < 360; i = i + this.StrokeWidth) {
+					this.drawLine(i);
+			}
+		}
+	}
+	
+	trackElementSize() {
+		this.maxRadius = (this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth : this.el.offsetHeight) / 2;
+		this.innerCircle.Origin = this.maxRadius;
+		this.outerCircle.Origin = this.maxRadius;
+	}
+
+	drawLine(lineAngle) {
+			this.outerCircle.Radius = Math.randomBetween(this.innerCircle.radius, this.maxRadius - this.strokeWidth)
+
+			const radianAngle = this.p.radians(lineAngle)
+			const start = this.innerCircle.CoordonateAtRadian(radianAngle);
+			const end = this.outerCircle.CoordonateAtRadian(radianAngle);
 			
-			var prev = {};
-			var init = {};
-
-			var rgbMode, secondaryColor, strokeWidth, circleRadius, cycleRate = 0;
-
-			p.init = function(settings) {
-					p.setStrokeWidth(settings.strokeWidth || 4);
-					p.setSecondaryColor(settings.secondaryColor || 100);
-					p.setRGBMode(settings.rgbMode || 0)
-					p.setCircleRadius(settings.circleRadius || 20);
-					p.setCycleRate(settings.cycleRate || 8);
+			if (lineAngle == 0) {
+					this.init.x = end.x;
+					this.init.y = end.y;
+			} else {
+					this.p.line(this.prev.x, this.prev.y, end.x, end.y);
 			}
 
-			p.setStrokeWidth = function(width) {
-					strokeWidth = width;
-			}
-
-			p.setSecondaryColor = function(color) {
-					secondaryColor = color;
-			}
-
-			p.setRGBMode = function(mode) {
-					rgbMode = mode;
-			}
-
-			p.setCircleRadius = function(radius) {
-					circleRadius = radius
-			}
-
-			p.setCycleRate = function(rate) {
-					cycleRate = rate;
-			}
-
-			p.setup = function() {
-				p.init({});
-				var el = document.getElementById("node");
-					size = el.offsetWidth < el.offsetHeight ? el.offsetWidth: el.offsetHeight;
-					halfSize = size / 2;
-					p.createCanvas(size, size);
-					p.frameRate(8);
-			};
-
-			p.windowResized = function() {
-				var el = document.getElementById("node");
-					size = el.offsetWidth < el.offsetHeight ? el.offsetWidth : el.offsetHeight;
-					halfSize = size / 2;
-					p.resizeCanvas(size, size);
-			}
-
-			p.draw = function() {
-					p.clear();
-					
-					// 360 / strokeWidth donne le nombre de ligne à générer
-					for(var i = 0; i < 360; i = i + strokeWidth) {
-							drawLine(i, strokeWidth, rgbMode, secondaryColor);
-					}
-					p.line(prev.x, prev.y, init.x, init.y);
-					
-			};
-
-			drawLine = function(lineAngle, strokeWidth, rgbMode, secondaryColor) {
-					// dépasse pas les limites de l'écran
-					var lineLength = randomInteger(circleRadius, p.height / 2 - strokeWidth);
-					
-					// point milieu de l'écran
-					var init = halfSize;
-					
-					// point correspondant à l'angle entre le milieu, et le premier cercle imaginaire
-					var start = {
-							x: (init + circleRadius / 2 * Math.cos(lineAngle * Math.PI / 180)),
-							y: (init + circleRadius / 2 * Math.sin(lineAngle * Math.PI / 180))
-					};
-					
-					// point correspondant à l'angle entre le milieu, et le deuxième cercle imaginaire
-					var end = {
-							x: (init + lineLength * Math.cos(lineAngle * Math.PI / 180)),
-							y: (init + lineLength * Math.sin(lineAngle * Math.PI / 180))
-					}
-					
-					if (lineAngle == 0) {
-							init.x = end.x;
-							init.y = end.y;
-					} else {
-							p.line(prev.x, prev.y, end.x, end.y);
-					}
-
-					// dessine la ligne
-					p.strokeWeight(strokeWidth);
-					p.stroke(getRandomColor(rgbMode, secondaryColor));
-					p.line(start.x, start.y, end.x, end.y);
-					
-					// Keep track of the ending coordonates
-					prev.x = end.x;
-					prev.y = end.y;
-			}
+			// dessine la ligne
+			this.p.strokeWeight(this.strokeWidth);
+			this.p.stroke(this.getRandomColor());
+			this.p.line(start.x, start.y, end.x, end.y);
 			
-			getRandomColor = function(rgbMode, secondaryColor) {
-					if (rgbMode == 0) {
-							return p.color(randomInteger(0, 256), secondaryColor, secondaryColor);
-					} else if (rgbMode == 1) {
-							return p.color(secondaryColor, randomInteger(0, 256), secondaryColor);
-					} else {
-							return p.color(secondaryColor, secondaryColor, randomInteger(0, 256));
-					}
-			};
-			
-			randomInteger = function(min, max) {
-					return Math.random() * (max - min) + min;
-			};
-	};
+			// Keep track of the ending coordonates
+			this.prev.x = end.x;
+			this.prev.y = end.y;
 
-	new p5(s, "node");
-})(p5);
+			if (lineAngle + this.strokeWidth > 359) {
+				this.p.line(this.prev.x, this.prev.y, this.init.x, this.init.y);
+			}
+	}
+
+	getRandomColor() {
+		if (this.rgbMode == 0) {
+			return this.p.color(Math.randomBetween(0, 256), this.secondaryColor, this.secondaryColor);
+		} else if (this.rgbMode == 1) {
+			return this.p.color(this.secondaryColor, Math.randomBetween(0, 256), this.secondaryColor);
+		} else {
+			return this.p.color(this.secondaryColor, this.secondaryColor, Math.randomBetween(0, 256));
+		}
+	}
+
+	get RgbMode() { return this.rgbMode; }
+	set RgbMode(val) { this.rgbMode = val; }
+
+	get SecondaryColor() { return this.secondaryColor; }
+	set SecondaryColor(val) { this.secondaryColor = val; }
+
+	get StrokeWidth() { return this.strokeWidth; }
+	set StrokeWidth(val) { this.strokeWidth = val; }
+
+	get CycleRate() { return this.cycleRate; }
+	set CycleRate(val) { this.cycleRate = val; }
+
+	set InnerCircleRadius(val) { 
+		this.innerCircle.Radius = val; 
+	}
+}	
+
+new p5(p => {
+	new Effect(p, {
+		rgbMode:  0,
+		secondaryColor: 200,
+		strokeWidth: 10,
+		circleRadius: 50,
+		cycleRate: 1,
+		element: "node"
+	});
+}, "node");
