@@ -20,8 +20,8 @@ var Circle = function () {
 	}
 
 	_createClass(Circle, [{
-		key: "CoordonateAtRadian",
-		value: function CoordonateAtRadian(radian) {
+		key: "CoordonatesAtRadian",
+		value: function CoordonatesAtRadian(radian) {
 			var cosAngle = Math.cos(radian);
 			var sinAngle = Math.sin(radian);
 
@@ -63,6 +63,8 @@ var Effect = function () {
 		    innerCircleRadius = _ref2$innerCircleRadi === undefined ? 20 : _ref2$innerCircleRadi,
 		    _ref2$cycleRate = _ref2.cycleRate,
 		    cycleRate = _ref2$cycleRate === undefined ? 8 : _ref2$cycleRate,
+		    _ref2$amplitude = _ref2.amplitude,
+		    amplitude = _ref2$amplitude === undefined ? 90 : _ref2$amplitude,
 		    _ref2$element = _ref2.element,
 		    element = _ref2$element === undefined ? "effect" : _ref2$element;
 
@@ -73,6 +75,7 @@ var Effect = function () {
 		this.secondaryColor = secondaryColor;
 		this.strokeWidth = strokeWidth;
 		this.cycleRate = cycleRate;
+
 		this.el = document.getElementById(element);
 
 		this.prev = {};
@@ -90,6 +93,8 @@ var Effect = function () {
 			radius: innerCircleRadius,
 			origin: this.maxRadius
 		});
+
+		this.setAmplitude(amplitude);
 
 		this.p.frameRate(cycleRate);
 
@@ -109,8 +114,15 @@ var Effect = function () {
 			_this.p.clear();
 
 			// loop 360/strokeWidth times for a full circle of lines
-			for (var i = 0; i < 360; i = i + _this.StrokeWidth) {
-				_this.drawLine(i);
+			for (var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + _this.strokeWidth) {
+				_this.outerCircle.Radius = Math.randomBetween(_this.minLineLength, _this.maxRadius - _this.strokeWidth);
+
+				var radianAngle = _this.p.radians(lineAngle);
+				var startCoordonates = _this.innerCircle.CoordonatesAtRadian(radianAngle);
+				var endCoordonates = _this.outerCircle.CoordonatesAtRadian(radianAngle);
+
+				_this.drawLine(startCoordonates, endCoordonates);
+				_this.linkExtremities(lineAngle, endCoordonates);
 			}
 		};
 	}
@@ -123,33 +135,53 @@ var Effect = function () {
 			this.outerCircle.Origin = this.maxRadius;
 		}
 	}, {
-		key: "drawLine",
-		value: function drawLine(lineAngle) {
-			this.outerCircle.Radius = Math.randomBetween(this.innerCircle.radius, this.maxRadius - this.strokeWidth);
-
-			var radianAngle = this.p.radians(lineAngle);
-			var start = this.innerCircle.CoordonateAtRadian(radianAngle);
-			var end = this.outerCircle.CoordonateAtRadian(radianAngle);
-
-			if (lineAngle == 0) {
-				this.init.x = end.x;
-				this.init.y = end.y;
+		key: "linkExtremities",
+		value: function linkExtremities(lineAngle, endCoordonates) {
+			var isFirstLine = lineAngle == 0;
+			if (isFirstLine) {
+				this.trackLineExtremitiesAsInitial(endCoordonates);
 			} else {
-				this.p.line(this.prev.x, this.prev.y, end.x, end.y);
+				this.drawPreviousAndCurrentExtremityLink(endCoordonates);
 			}
 
-			// dessine la ligne
-			this.p.strokeWeight(this.strokeWidth);
-			this.p.stroke(this.getRandomColor());
-			this.p.line(start.x, start.y, end.x, end.y);
+			this.trackLineExtremitiesAsPrevious(endCoordonates);
 
-			// Keep track of the ending coordonates
-			this.prev.x = end.x;
-			this.prev.y = end.y;
-
-			if (lineAngle + this.strokeWidth > 359) {
-				this.p.line(this.prev.x, this.prev.y, this.init.x, this.init.y);
+			var isLastLine = lineAngle + this.strokeWidth > 359;
+			if (isLastLine) {
+				this.drawCurrentAndInitialExtremityLink(endCoordonates);
 			}
+		}
+	}, {
+		key: "trackLineExtremitiesAsInitial",
+		value: function trackLineExtremitiesAsInitial(endCoordonates) {
+			this.init.x = endCoordonates.x;
+			this.init.y = endCoordonates.y;
+		}
+	}, {
+		key: "drawPreviousAndCurrentExtremityLink",
+		value: function drawPreviousAndCurrentExtremityLink(endCoordonates) {
+			this.drawLine(this.prev, endCoordonates);
+		}
+	}, {
+		key: "trackLineExtremitiesAsPrevious",
+		value: function trackLineExtremitiesAsPrevious(endCoordonates) {
+			this.prev.x = endCoordonates.x;
+			this.prev.y = endCoordonates.y;
+		}
+	}, {
+		key: "drawCurrentAndInitialExtremityLink",
+		value: function drawCurrentAndInitialExtremityLink(endCoordonates) {
+			this.drawLine(endCoordonates, this.init);
+		}
+	}, {
+		key: "drawLine",
+		value: function drawLine(startCoordonates, endCoordonates) {
+			var newColor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
+			if (newColor) {
+				this.p.stroke(this.getRandomColor());
+			}
+			this.p.line(startCoordonates.x, startCoordonates.y, endCoordonates.x, endCoordonates.y);
 		}
 	}, {
 		key: "getRandomColor",
@@ -161,6 +193,22 @@ var Effect = function () {
 			} else {
 				return this.p.color(this.secondaryColor, this.secondaryColor, Math.randomBetween(0, 256));
 			}
+		}
+	}, {
+		key: "setAmplitude",
+		value: function setAmplitude(val) {
+			this.amplitude = val;
+			var maxAmplitude = this.maxRadius - this.strokeWidth - this.innerCircle.radius;
+			var hypothecalMinLineLength = (100 - this.amplitude) / 100 * maxAmplitude;
+			this.minLineLength = hypothecalMinLineLength === 0 ? this.innerCircle.radius : hypothecalMinLineLength;
+		}
+	}, {
+		key: "Amplitude",
+		get: function get() {
+			return this.rgbMode;
+		},
+		set: function set(val) {
+			this.setAmplitude(val);
 		}
 	}, {
 		key: "RgbMode",
@@ -184,7 +232,7 @@ var Effect = function () {
 			return this.strokeWidth;
 		},
 		set: function set(val) {
-			this.strokeWidth = val;
+			this.strokeWidth = val;this.p.strokeWeight(val);
 		}
 	}, {
 		key: "CycleRate",
@@ -192,10 +240,13 @@ var Effect = function () {
 			return this.cycleRate;
 		},
 		set: function set(val) {
-			this.cycleRate = val;
+			this.cycleRate = val;this.p.frameRate(val);
 		}
 	}, {
 		key: "InnerCircleRadius",
+		get: function get() {
+			return InnerCircleRadius;
+		},
 		set: function set(val) {
 			this.innerCircle.Radius = val;
 		}
@@ -204,13 +255,14 @@ var Effect = function () {
 	return Effect;
 }();
 
-new p5(function (p) {
-	new Effect(p, {
+var p5 = new p5(function (p) {
+	p.effect = new Effect(p, {
 		rgbMode: 0,
 		secondaryColor: 200,
 		strokeWidth: 10,
 		circleRadius: 50,
-		cycleRate: 1,
+		cycleRate: 12,
+		amplitude: 5,
 		element: "node"
 	});
 }, "node");
