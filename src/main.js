@@ -81,7 +81,6 @@ class Effect {
 		this.p.draw = () => {
 			this.p.clear();
 
-			// loop 360/strokeWidth times for a full circle of lines
 			for(var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + this.strokeWidth) {
 				this.outerCircle.Radius = Math.randomBetween(this.minLineLength, this.maxRadius - this.strokeWidth)
 
@@ -155,8 +154,7 @@ class Effect {
 	setAmplitude(val) {
 		this.amplitude = val;
 		const maxAmplitude = (this.maxRadius - this.strokeWidth) - this.innerCircle.radius;
-		const hypothecalMinLineLength = (100 - this.amplitude) / 100 * maxAmplitude
-		this.minLineLength = hypothecalMinLineLength === 0 ? this.innerCircle.radius : hypothecalMinLineLength;
+		this.minLineLength = this.innerCircle.radius + (100 - this.amplitude) / 100 * maxAmplitude;
 	}
 
 	get Amplitude() { return this.rgbMode; }
@@ -170,7 +168,11 @@ class Effect {
 	get CycleRate() { return this.cycleRate; }
 	set CycleRate(val) { this.cycleRate = val; this.p.frameRate(val); }
 	get InnerCircleRadius() { return InnerCircleRadius; }
-	set InnerCircleRadius(val) { this.innerCircle.Radius = val; }
+	set InnerCircleRadius(val) { 
+		this.innerCircle.Radius = val > this.maxRadius  - this.strokeWidth - 30 ? this.maxRadius  - this.strokeWidth - 30 : val; 
+		this.setAmplitude(this.amplitude);
+	}
+
 }	
 
 const p5 = new p5(p => {

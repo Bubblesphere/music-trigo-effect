@@ -113,7 +113,6 @@ var Effect = function () {
 		this.p.draw = function () {
 			_this.p.clear();
 
-			// loop 360/strokeWidth times for a full circle of lines
 			for (var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + _this.strokeWidth) {
 				_this.outerCircle.Radius = Math.randomBetween(_this.minLineLength, _this.maxRadius - _this.strokeWidth);
 
@@ -199,8 +198,7 @@ var Effect = function () {
 		value: function setAmplitude(val) {
 			this.amplitude = val;
 			var maxAmplitude = this.maxRadius - this.strokeWidth - this.innerCircle.radius;
-			var hypothecalMinLineLength = (100 - this.amplitude) / 100 * maxAmplitude;
-			this.minLineLength = hypothecalMinLineLength === 0 ? this.innerCircle.radius : hypothecalMinLineLength;
+			this.minLineLength = this.innerCircle.radius + (100 - this.amplitude) / 100 * maxAmplitude;
 		}
 	}, {
 		key: "Amplitude",
@@ -248,7 +246,8 @@ var Effect = function () {
 			return InnerCircleRadius;
 		},
 		set: function set(val) {
-			this.innerCircle.Radius = val;
+			this.innerCircle.Radius = val > this.maxRadius - this.strokeWidth - 30 ? this.maxRadius - this.strokeWidth - 30 : val;
+			this.setAmplitude(this.amplitude);
 		}
 	}]);
 
