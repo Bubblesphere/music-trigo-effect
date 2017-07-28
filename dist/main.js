@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -15,33 +15,33 @@ var Circle = function () {
 
 		_classCallCheck(this, Circle);
 
-		this.radius = radius;
-		this.origin = origin;
+		this._radius = radius;
+		this._origin = origin;
 	}
 
 	_createClass(Circle, [{
-		key: "CoordonatesAtRadian",
+		key: 'CoordonatesAtRadian',
 		value: function CoordonatesAtRadian(radian) {
 			var cosAngle = Math.cos(radian);
 			var sinAngle = Math.sin(radian);
 
 			return {
-				x: this.origin + this.radius * cosAngle,
-				y: this.origin + this.radius * sinAngle
+				x: this._origin + this._radius * cosAngle,
+				y: this._origin + this._radius * sinAngle
 			};
 		}
 	}, {
-		key: "Radius",
+		key: 'radius',
 		get: function get() {
-			return this.radius;
+			return this._radius;
 		},
 		set: function set(val) {
-			this.radius = val;
+			this._radius = val;
 		}
 	}, {
-		key: "Origin",
+		key: 'origin',
 		set: function set(val) {
-			this.origin = val;
+			this._origin = val;
 		}
 	}]);
 
@@ -70,184 +70,201 @@ var Effect = function () {
 
 		_classCallCheck(this, Effect);
 
-		this.p = p;
-		this.rgbMode = rgbMode;
-		this.secondaryColor = secondaryColor;
-		this.strokeWidth = strokeWidth;
-		this.cycleRate = cycleRate;
+		this._p = p;
+		this._rgbMode = rgbMode;
+		this._secondaryColor = secondaryColor;
+		this._strokeWidth = strokeWidth;
+		this._cycleRate = cycleRate;
 
-		this.el = document.getElementById(element);
+		this._el = document.getElementById(element);
 
-		this.prev = {};
-		this.init = {};
+		this._prev = {};
+		this._init = {};
 
-		var maxDiameter = this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth : this.el.offsetHeight;
-		this.maxRadius = maxDiameter / 2;
+		var maxDiameter = this._el.offsetWidth < this._el.offsetHeight ? this._el.offsetWidth : this._el.offsetHeight;
+		this._maxRadius = maxDiameter / 2;
 
-		this.innerCircle = new Circle({
+		this._innerCircle = new Circle({
 			radius: innerCircleRadius,
-			origin: this.maxRadius
+			origin: this._maxRadius
 		});
 
-		this.outerCircle = new Circle({
+		this._outerCircle = new Circle({
 			radius: innerCircleRadius,
-			origin: this.maxRadius
+			origin: this._maxRadius
 		});
 
-		this.setAmplitude(amplitude);
+		this._setAmplitude(amplitude);
 
-		this.p.frameRate(cycleRate);
+		this._p.frameRate(cycleRate);
 
-		this.p.setup = function () {
-			_this.trackElementSize();
-			var diameter = _this.maxRadius * 2;
-			_this.p.createCanvas(diameter, diameter);
+		this._events = {
+			beforeSetup: new Event('beforeSetup'),
+			afterSetup: new Event('afterSetup'),
+			beforeResize: new Event('beforeResize'),
+			afterResize: new Event('afterResize'),
+			beforeDraw: new Event('beforeDraw'),
+			afterDraw: new Event('afterDraw'),
+			onLineDraw: new Event('onLineDraw')
 		};
 
-		this.p.windowResized = function () {
-			_this.trackElementSize();
-			var diameter = _this.maxRadius * 2;
-			_this.p.resizeCanvas(diameter, diameter);
+		this._p.setup = function () {
+			_this._el.dispatchEvent(_this._events.beforeSetup);
+			_this._trackElementSize();
+			var diameter = _this._maxRadius * 2;
+			_this._p.createCanvas(diameter, diameter);
+			_this._el.dispatchEvent(_this._events.afterSetup);
 		};
 
-		this.p.draw = function () {
-			_this.p.clear();
+		this._p.windowResized = function () {
+			_this._el.dispatchEvent(_this._events.beforeResize);
+			_this._trackElementSize();
+			var diameter = _this._maxRadius * 2;
+			_this._p.resizeCanvas(diameter, diameter);
+			_this._el.dispatchEvent(_this._events.afterResize);
+		};
 
-			for (var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + _this.strokeWidth) {
-				_this.outerCircle.Radius = Math.randomBetween(_this.minLineLength, _this.maxRadius - _this.strokeWidth);
+		this._p.draw = function () {
+			_this._el.dispatchEvent(_this._events.beforeDraw);
+			_this._p.clear();
 
-				var radianAngle = _this.p.radians(lineAngle);
-				var startCoordonates = _this.innerCircle.CoordonatesAtRadian(radianAngle);
-				var endCoordonates = _this.outerCircle.CoordonatesAtRadian(radianAngle);
+			for (var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + _this._strokeWidth) {
+				_this._outerCircle.radius = Math.randomBetween(_this._minLineLength, _this._maxRadius - _this._strokeWidth);
 
-				_this.drawLine(startCoordonates, endCoordonates);
-				_this.linkExtremities(lineAngle, endCoordonates);
+				var radianAngle = _this._p.radians(lineAngle);
+				var startCoordonates = _this._innerCircle.CoordonatesAtRadian(radianAngle);
+				var endCoordonates = _this._outerCircle.CoordonatesAtRadian(radianAngle);
+
+				_this._drawLine(startCoordonates, endCoordonates);
+				_this._linkExtremities(lineAngle, endCoordonates);
 			}
+			_this._el.dispatchEvent(_this._events.afterDraw);
 		};
 	}
 
 	_createClass(Effect, [{
-		key: "trackElementSize",
-		value: function trackElementSize() {
-			this.maxRadius = (this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth : this.el.offsetHeight) / 2;
-			this.innerCircle.Origin = this.maxRadius;
-			this.outerCircle.Origin = this.maxRadius;
+		key: '_trackElementSize',
+		value: function _trackElementSize() {
+			this._maxRadius = (this._el.offsetWidth < this._el.offsetHeight ? this._el.offsetWidth : this._el.offsetHeight) / 2;
+			this._innerCircle.origin = this._maxRadius;
+			this._outerCircle.origin = this._maxRadius;
 		}
 	}, {
-		key: "linkExtremities",
-		value: function linkExtremities(lineAngle, endCoordonates) {
+		key: '_linkExtremities',
+		value: function _linkExtremities(lineAngle, endCoordonates) {
 			var isFirstLine = lineAngle == 0;
 			if (isFirstLine) {
-				this.trackLineExtremitiesAsInitial(endCoordonates);
+				this._trackLineExtremitiesAsInitial(endCoordonates);
 			} else {
-				this.drawPreviousAndCurrentExtremityLink(endCoordonates);
+				this._drawPreviousAndCurrentExtremityLink(endCoordonates);
 			}
 
-			this.trackLineExtremitiesAsPrevious(endCoordonates);
+			this._trackLineExtremitiesAsPrevious(endCoordonates);
 
-			var isLastLine = lineAngle + this.strokeWidth > 359;
+			var isLastLine = lineAngle + this._strokeWidth > 359;
 			if (isLastLine) {
-				this.drawCurrentAndInitialExtremityLink(endCoordonates);
+				this._drawCurrentAndInitialExtremityLink(endCoordonates);
 			}
 		}
 	}, {
-		key: "trackLineExtremitiesAsInitial",
-		value: function trackLineExtremitiesAsInitial(endCoordonates) {
-			this.init.x = endCoordonates.x;
-			this.init.y = endCoordonates.y;
+		key: '_trackLineExtremitiesAsInitial',
+		value: function _trackLineExtremitiesAsInitial(endCoordonates) {
+			this._init.x = endCoordonates.x;
+			this._init.y = endCoordonates.y;
 		}
 	}, {
-		key: "drawPreviousAndCurrentExtremityLink",
-		value: function drawPreviousAndCurrentExtremityLink(endCoordonates) {
-			this.drawLine(this.prev, endCoordonates);
+		key: '_drawPreviousAndCurrentExtremityLink',
+		value: function _drawPreviousAndCurrentExtremityLink(endCoordonates) {
+			this._drawLine(this._prev, endCoordonates);
 		}
 	}, {
-		key: "trackLineExtremitiesAsPrevious",
-		value: function trackLineExtremitiesAsPrevious(endCoordonates) {
-			this.prev.x = endCoordonates.x;
-			this.prev.y = endCoordonates.y;
+		key: '_trackLineExtremitiesAsPrevious',
+		value: function _trackLineExtremitiesAsPrevious(endCoordonates) {
+			this._prev.x = endCoordonates.x;
+			this._prev.y = endCoordonates.y;
 		}
 	}, {
-		key: "drawCurrentAndInitialExtremityLink",
-		value: function drawCurrentAndInitialExtremityLink(endCoordonates) {
-			this.drawLine(endCoordonates, this.init);
+		key: '_drawCurrentAndInitialExtremityLink',
+		value: function _drawCurrentAndInitialExtremityLink(endCoordonates) {
+			this._drawLine(endCoordonates, this._init);
 		}
 	}, {
-		key: "drawLine",
-		value: function drawLine(startCoordonates, endCoordonates) {
+		key: '_drawLine',
+		value: function _drawLine(startCoordonates, endCoordonates) {
 			var newColor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
 
 			if (newColor) {
-				this.p.stroke(this.getRandomColor());
+				this._p.stroke(this._getRandomColor());
 			}
-			this.p.line(startCoordonates.x, startCoordonates.y, endCoordonates.x, endCoordonates.y);
+			this._el.dispatchEvent(this._events.onLineDraw);
+			this._p.line(startCoordonates.x, startCoordonates.y, endCoordonates.x, endCoordonates.y);
 		}
 	}, {
-		key: "getRandomColor",
-		value: function getRandomColor() {
-			if (this.rgbMode == 0) {
-				return this.p.color(Math.randomBetween(0, 256), this.secondaryColor, this.secondaryColor);
-			} else if (this.rgbMode == 1) {
-				return this.p.color(this.secondaryColor, Math.randomBetween(0, 256), this.secondaryColor);
+		key: '_getRandomColor',
+		value: function _getRandomColor() {
+			if (this._rgbMode == 0) {
+				return this._p.color(Math.randomBetween(0, 256), this._secondaryColor, this._secondaryColor);
+			} else if (this._rgbMode == 1) {
+				return this._p.color(this._secondaryColor, Math.randomBetween(0, 256), this._secondaryColor);
 			} else {
-				return this.p.color(this.secondaryColor, this.secondaryColor, Math.randomBetween(0, 256));
+				return this._p.color(this._secondaryColor, this._secondaryColor, Math.randomBetween(0, 256));
 			}
 		}
 	}, {
-		key: "setAmplitude",
-		value: function setAmplitude(val) {
-			this.amplitude = val;
-			var maxAmplitude = this.maxRadius - this.strokeWidth - this.innerCircle.radius;
-			this.minLineLength = this.innerCircle.radius + (100 - this.amplitude) / 100 * maxAmplitude;
+		key: '_setAmplitude',
+		value: function _setAmplitude(val) {
+			this._amplitude = val;
+			var maxAmplitude = this._maxRadius - this._strokeWidth - this._innerCircle.radius;
+			this._minLineLength = this._innerCircle.radius + (100 - this._amplitude) / 100 * maxAmplitude;
 		}
 	}, {
-		key: "Amplitude",
+		key: 'amplitude',
 		get: function get() {
-			return this.rgbMode;
+			return this._rgbMode;
 		},
 		set: function set(val) {
-			this.setAmplitude(val);
+			this._setAmplitude(val);
 		}
 	}, {
-		key: "RgbMode",
+		key: 'rgbMode',
 		get: function get() {
-			return this.rgbMode;
+			return this._rgbMode;
 		},
 		set: function set(val) {
-			this.rgbMode = val;
+			this._rgbMode = val;
 		}
 	}, {
-		key: "SecondaryColor",
+		key: 'secondaryColor',
 		get: function get() {
-			return this.secondaryColor;
+			return this._secondaryColor;
 		},
 		set: function set(val) {
-			this.secondaryColor = val;
+			this._secondaryColor = val;
 		}
 	}, {
-		key: "StrokeWidth",
+		key: 'strokeWidth',
 		get: function get() {
-			return this.strokeWidth;
+			return this._strokeWidth;
 		},
 		set: function set(val) {
-			this.strokeWidth = val;this.p.strokeWeight(val);
+			this._strokeWidth = val;this._p.strokeWeight(val);
 		}
 	}, {
-		key: "CycleRate",
+		key: 'cycleRate',
 		get: function get() {
-			return this.cycleRate;
+			return this._cycleRate;
 		},
 		set: function set(val) {
-			this.cycleRate = val;this.p.frameRate(val);
+			this._cycleRate = val;this._p.frameRate(val);
 		}
 	}, {
-		key: "InnerCircleRadius",
+		key: 'innerCircleRadius',
 		get: function get() {
-			return InnerCircleRadius;
+			return this._innerCircleRadius;
 		},
 		set: function set(val) {
-			this.innerCircle.Radius = val > this.maxRadius - this.strokeWidth - 30 ? this.maxRadius - this.strokeWidth - 30 : val;
-			this.setAmplitude(this.amplitude);
+			this._innerCircle.radius = val > this._maxRadius - this._strokeWidth - this._strokeWidth ? this._maxRadius - this._strokeWidth - this._strokeWidth : val;
+			this._setAmplitude(this._amplitude);
 		}
 	}]);
 

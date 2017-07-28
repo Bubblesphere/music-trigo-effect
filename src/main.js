@@ -7,23 +7,21 @@ class Circle {
 		radius: radius,
 		origin: origin
 	}) {
-		this.radius = radius
-		this.origin = origin;
+		this._radius = radius
+		this._origin = origin;
 	}
 
-	get Radius() { return this.radius; }
-
-	set Radius(val) { this.radius = val; }
-
-	set Origin(val) { this.origin = val; }
+	get radius() { return this._radius; }
+	set radius(val) { this._radius = val; }
+	set origin(val) { this._origin = val; }
 
 	CoordonatesAtRadian(radian) {
 		const cosAngle = Math.cos(radian);
 		const sinAngle = Math.sin(radian);
 
 		return {
-			x: this.origin + this.radius * cosAngle,
-			y: this.origin + this.radius * sinAngle
+			x: this._origin + this._radius * cosAngle,
+			y: this._origin + this._radius * sinAngle
 		}
 	}
 }
@@ -38,141 +36,157 @@ class Effect {
 		amplitude: amplitude = 90,
 		element: element = "effect"
 	}={}) {
-		this.p = p;
-		this.rgbMode = rgbMode;
-		this.secondaryColor = secondaryColor;
-		this.strokeWidth = strokeWidth;
-		this.cycleRate = cycleRate;
+		this._p = p;
+		this._rgbMode = rgbMode;
+		this._secondaryColor = secondaryColor;
+		this._strokeWidth = strokeWidth;
+		this._cycleRate = cycleRate;
 		
-		this.el = document.getElementById(element);
+		this._el = document.getElementById(element);
 
-		this.prev = {};
-		this.init = {};
+		this._prev = {};
+		this._init = {};
 		
-		const maxDiameter = this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth: this.el.offsetHeight;
-		this.maxRadius = maxDiameter / 2;
+		const maxDiameter = this._el.offsetWidth < this._el.offsetHeight ? this._el.offsetWidth: this._el.offsetHeight;
+		this._maxRadius = maxDiameter / 2;
 
-		this.innerCircle = new Circle({
+		this._innerCircle = new Circle({
 			radius: innerCircleRadius,
-			origin: this.maxRadius
+			origin: this._maxRadius
 		});
 
-		this.outerCircle = new Circle({
+		this._outerCircle = new Circle({
 			radius: innerCircleRadius,
-			origin: this.maxRadius
+			origin: this._maxRadius
 		})
 
-		this.setAmplitude(amplitude);
+		this._setAmplitude(amplitude);
 
-		this.p.frameRate(cycleRate);
+		this._p.frameRate(cycleRate);
 
-		this.p.setup = () => {
-			this.trackElementSize();
-			const diameter = this.maxRadius * 2;
-			this.p.createCanvas(diameter , diameter);
+		this._events = {
+			beforeSetup: new Event('beforeSetup'),
+			afterSetup: new Event('afterSetup'),
+			beforeResize: new Event('beforeResize'),
+			afterResize: new Event('afterResize'),
+			beforeDraw: new Event('beforeDraw'),
+			afterDraw: new Event('afterDraw'),
+			onLineDraw: new Event('onLineDraw'),
 		}
 
-		this.p.windowResized = () => {
-			this.trackElementSize();
-			const diameter = this.maxRadius * 2;
-			this.p.resizeCanvas(diameter, diameter);
+		this._p.setup = () => {
+			this._el.dispatchEvent(this._events.beforeSetup);
+			this._trackElementSize();
+			const diameter = this._maxRadius * 2;
+			this._p.createCanvas(diameter , diameter);
+			this._el.dispatchEvent(this._events.afterSetup);
 		}
 
-		this.p.draw = () => {
-			this.p.clear();
+		this._p.windowResized = () => {
+			this._el.dispatchEvent(this._events.beforeResize);
+			this._trackElementSize();
+			const diameter = this._maxRadius * 2;
+			this._p.resizeCanvas(diameter, diameter);
+			this._el.dispatchEvent(this._events.afterResize);
+		}
 
-			for(var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + this.strokeWidth) {
-				this.outerCircle.Radius = Math.randomBetween(this.minLineLength, this.maxRadius - this.strokeWidth)
+		this._p.draw = () => {
+			this._el.dispatchEvent(this._events.beforeDraw);
+			this._p.clear();
 
-				const radianAngle = this.p.radians(lineAngle)
-				const startCoordonates = this.innerCircle.CoordonatesAtRadian(radianAngle);
-				const endCoordonates = this.outerCircle.CoordonatesAtRadian(radianAngle);
+			for(var lineAngle = 0; lineAngle < 360; lineAngle = lineAngle + this._strokeWidth) {
+				this._outerCircle.radius = Math.randomBetween(this._minLineLength, this._maxRadius - this._strokeWidth)
+
+				const radianAngle = this._p.radians(lineAngle)
+				const startCoordonates = this._innerCircle.CoordonatesAtRadian(radianAngle);
+				const endCoordonates = this._outerCircle.CoordonatesAtRadian(radianAngle);
 				
-				this.drawLine(startCoordonates, endCoordonates);	
-				this.linkExtremities(lineAngle, endCoordonates);
+				this._drawLine(startCoordonates, endCoordonates);	
+				this._linkExtremities(lineAngle, endCoordonates);
 			}
+			this._el.dispatchEvent(this._events.afterDraw);
 		}
 	}
 
-	trackElementSize() {
-		this.maxRadius = (this.el.offsetWidth < this.el.offsetHeight ? this.el.offsetWidth : this.el.offsetHeight) / 2;
-		this.innerCircle.Origin = this.maxRadius;
-		this.outerCircle.Origin = this.maxRadius;
+	_trackElementSize() {
+		this._maxRadius = (this._el.offsetWidth < this._el.offsetHeight ? this._el.offsetWidth : this._el.offsetHeight) / 2;
+		this._innerCircle.origin = this._maxRadius;
+		this._outerCircle.origin = this._maxRadius;
 	}
 
-	linkExtremities(lineAngle, endCoordonates) {
+	_linkExtremities(lineAngle, endCoordonates) {
 		const isFirstLine = lineAngle == 0;
 		if (isFirstLine) {
-				this.trackLineExtremitiesAsInitial(endCoordonates);
+				this._trackLineExtremitiesAsInitial(endCoordonates);
 		} else {
-				this.drawPreviousAndCurrentExtremityLink(endCoordonates);
+				this._drawPreviousAndCurrentExtremityLink(endCoordonates);
 		}
 
-		this.trackLineExtremitiesAsPrevious(endCoordonates);
+		this._trackLineExtremitiesAsPrevious(endCoordonates);
 
-		const isLastLine = lineAngle + this.strokeWidth > 359;
+		const isLastLine = lineAngle + this._strokeWidth > 359;
 		if (isLastLine) {
-			this.drawCurrentAndInitialExtremityLink(endCoordonates);
+			this._drawCurrentAndInitialExtremityLink(endCoordonates);
 		}
 	}
 
-	trackLineExtremitiesAsInitial(endCoordonates) {
-			this.init.x = endCoordonates.x;
-			this.init.y = endCoordonates.y;
+	_trackLineExtremitiesAsInitial(endCoordonates) {
+			this._init.x = endCoordonates.x;
+			this._init.y = endCoordonates.y;
 	}
 
-	drawPreviousAndCurrentExtremityLink(endCoordonates) {
-		this.drawLine(this.prev, endCoordonates);
+	_drawPreviousAndCurrentExtremityLink(endCoordonates) {
+		this._drawLine(this._prev, endCoordonates);
 	}
 	
-	trackLineExtremitiesAsPrevious(endCoordonates) {
-			this.prev.x = endCoordonates.x;
-			this.prev.y = endCoordonates.y;
+	_trackLineExtremitiesAsPrevious(endCoordonates) {
+			this._prev.x = endCoordonates.x;
+			this._prev.y = endCoordonates.y;
 	}
 
-	drawCurrentAndInitialExtremityLink(endCoordonates) {
-		this.drawLine(endCoordonates, this.init)
+	_drawCurrentAndInitialExtremityLink(endCoordonates) {
+		this._drawLine(endCoordonates, this._init)
 	}
 
-	drawLine(startCoordonates, endCoordonates, newColor = true) {
+	_drawLine(startCoordonates, endCoordonates, newColor = true) {
 		if (newColor) {
-			this.p.stroke(this.getRandomColor());
+			this._p.stroke(this._getRandomColor());
 		}
-		this.p.line(startCoordonates.x, startCoordonates.y, endCoordonates.x, endCoordonates.y);
+		this._el.dispatchEvent(this._events.onLineDraw);
+		this._p.line(startCoordonates.x, startCoordonates.y, endCoordonates.x, endCoordonates.y);
 	}
 
-	getRandomColor() {
-		if (this.rgbMode == 0) {
-			return this.p.color(Math.randomBetween(0, 256), this.secondaryColor, this.secondaryColor);
-		} else if (this.rgbMode == 1) {
-			return this.p.color(this.secondaryColor, Math.randomBetween(0, 256), this.secondaryColor);
+	_getRandomColor() {
+		if (this._rgbMode == 0) {
+			return this._p.color(Math.randomBetween(0, 256), this._secondaryColor, this._secondaryColor);
+		} else if (this._rgbMode == 1) {
+			return this._p.color(this._secondaryColor, Math.randomBetween(0, 256), this._secondaryColor);
 		} else {
-			return this.p.color(this.secondaryColor, this.secondaryColor, Math.randomBetween(0, 256));
+			return this._p.color(this._secondaryColor, this._secondaryColor, Math.randomBetween(0, 256));
 		}
 	}
 
-	setAmplitude(val) {
-		this.amplitude = val;
-		const maxAmplitude = (this.maxRadius - this.strokeWidth) - this.innerCircle.radius;
-		this.minLineLength = this.innerCircle.radius + (100 - this.amplitude) / 100 * maxAmplitude;
+	_setAmplitude(val) {
+		this._amplitude = val;
+		const maxAmplitude = (this._maxRadius - this._strokeWidth) - this._innerCircle.radius;
+		this._minLineLength = this._innerCircle.radius + (100 - this._amplitude) / 100 * maxAmplitude;
 	}
 
-	get Amplitude() { return this.rgbMode; }
-	set Amplitude(val) { this.setAmplitude(val);}
-	get RgbMode() { return this.rgbMode; }
-	set RgbMode(val) { this.rgbMode = val; }
-	get SecondaryColor() { return this.secondaryColor; }
-	set SecondaryColor(val) { this.secondaryColor = val; }
-	get StrokeWidth() { return this.strokeWidth; }
-	set StrokeWidth(val) { this.strokeWidth = val; this.p.strokeWeight(val); }
-	get CycleRate() { return this.cycleRate; }
-	set CycleRate(val) { this.cycleRate = val; this.p.frameRate(val); }
-	get InnerCircleRadius() { return InnerCircleRadius; }
-	set InnerCircleRadius(val) { 
-		this.innerCircle.Radius = val > this.maxRadius  - this.strokeWidth - 30 ? this.maxRadius  - this.strokeWidth - 30 : val; 
-		this.setAmplitude(this.amplitude);
+	get amplitude() { return this._rgbMode; }
+	set amplitude(val) { this._setAmplitude(val);}
+	get rgbMode() { return this._rgbMode; }
+	set rgbMode(val) { this._rgbMode = val; }
+	get secondaryColor() { return this._secondaryColor; }
+	set secondaryColor(val) { this._secondaryColor = val; }
+	get strokeWidth() { return this._strokeWidth; }
+	set strokeWidth(val) { this._strokeWidth = val; this._p.strokeWeight(val); }
+	get cycleRate() { return this._cycleRate; }
+	set cycleRate(val) { this._cycleRate = val; this._p.frameRate(val); }
+	get innerCircleRadius() { return this._innerCircleRadius; }
+	set innerCircleRadius(val) { 
+		this._innerCircle.radius = val > this._maxRadius  - this._strokeWidth - this._strokeWidth ? this._maxRadius  - this._strokeWidth - this._strokeWidth : val; 
+		this._setAmplitude(this._amplitude);
 	}
-
 }	
 
 const p5 = new p5(p => {
