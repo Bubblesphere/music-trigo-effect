@@ -277,8 +277,8 @@ var p5 = new p5(function (p) {
 		secondaryColor: 200,
 		strokeWidth: 10,
 		circleRadius: 50,
-		cycleRate: 12,
-		amplitude: 5,
+		cycleRate: 30,
+		amplitude: 50,
 		element: "node"
 	});
 }, "node");

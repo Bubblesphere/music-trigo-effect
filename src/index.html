@@ -2,6 +2,7 @@
 <html>
 <head>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.11/p5.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.11/addons/p5.sound.js"></script>
 </head>
 <body style="width: 100%;">
 
@@ -13,7 +14,8 @@
 	<input id="amplitude" type="range" min="0" max="100" step="1" oninput="p5.effect.amplitude = parseInt(this.value)">
 	
 	<div id="node" style="width:400px;height:400px;"></div>
-	
-	<script src="./main.js"></script>
+	<div id="node2" style="width:400px;height:400px;"></div>
+	<p id="debug"></p>
+	<script src="./main.sound.js"></script>
 </body>
 </html>
