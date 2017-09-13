@@ -207,7 +207,7 @@ const p5 = new p5(p => {
 	p.effect = new Effect(p, {
 		rgbMode:  0,
 		secondaryColor: 0,
-		strokeWidth: 4,
+		strokeWidth: 20,
 		circleRadius: 50,
 		cycleRate: 25,
 		amplitude: 100,
